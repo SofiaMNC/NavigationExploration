@@ -13,41 +13,31 @@ struct PlayView: View {
 
   var body: some View {
     List {
-      ZStack {
         LazyVStack {
           ForEach(0...100, id: \.self) { index in
             NavigationLink(value: "Song \(index)") {
               Label("Song \(index)", systemImage: "\(index).circle")
             }
           }
+        }.background {
+          GeometryReader { proxy in
+            EmptyView().onChange(of: proxy.frame(in: .global).minY) { newOffset in
+              print(newOffset)
+              if newOffset < 100 {
+                withAnimation {
+                  showFilter = false
+                  showToolbar = false
+                }
+              } else {
+                showFilter = true
+                showToolbar = true
+              }
+            }
+          }
         }
-        GeometryReader { proxy in
-          let offset = proxy.frame(in: .named("scroll")).minY
-          Color.clear.preference(key: ScrollViewOffsetPreferenceKey.self, value: offset)
-        }
-      }
     }
     .navigationDestination(for: String.self) { i in
       SongView()
-    }
-    .coordinateSpace(name: "scroll")
-    .onPreferenceChange(ScrollViewOffsetPreferenceKey.self) { value in
-      print(value)
-      withAnimation {
-        if value < 350 {
-          showFilter = false
-        } else {
-          showFilter = true
-        }
-      }
-      
-      withAnimation {
-        if value < 350 {
-          showToolbar = false
-        } else {
-          showToolbar = true
-        }
-      }
     }
   }
 }

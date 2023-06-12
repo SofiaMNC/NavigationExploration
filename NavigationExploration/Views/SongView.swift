@@ -7,53 +7,43 @@
 
 import SwiftUI
 
-// Preference that observes a CGFloat.
-struct ScrollViewOffsetPreferenceKey: PreferenceKey {
-  static var defaultValue = CGFloat.zero
-
-  static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-    value += nextValue()
-  }
-}
-
 struct SongView: View {
   @State private var showImageInNavbar = false
   @State private var imageDimension: CGFloat = 200
   
   var body: some View {
     ScrollView {
-      ZStack {
-        LazyVStack {
+        VStack {
           Image(systemName: "person.crop.artframe")
             .resizable()
             .frame(width: imageDimension, height: imageDimension)
           Spacer()
           ForEach(0...100, id: \.self) { index in
+            HStack {
+              Spacer()
               Text("Row \(index)")
+              Spacer()
+            }
+          }
+        }.background {
+          GeometryReader { proxy in
+            EmptyView().onChange(of: proxy.frame(in: .named("scroll")).minY) { newOffset in
+              if newOffset < 0 {
+                imageDimension = max(0, imageDimension + newOffset / 2)
+              } else {
+                imageDimension = min(imageDimension + newOffset / 2, 200)
+              }
+
+              if imageDimension == 0 {
+                showImageInNavbar = true
+              } else {
+                showImageInNavbar = false
+              }
+            }
           }
         }
-        GeometryReader { proxy in
-          let offset = proxy.frame(in: .named("scroll")).minY
-          Color.clear.preference(key: ScrollViewOffsetPreferenceKey.self, value: offset)
-        }
-      }
     }
     .coordinateSpace(name: "scroll")
-    .onPreferenceChange(ScrollViewOffsetPreferenceKey.self) { value in
-      print(value)
-      
-      if value < 0 {
-        imageDimension = max(0, imageDimension + value / 2)
-      } else {
-        imageDimension = min(imageDimension + value / 2, 200)
-      }
-      
-      if imageDimension == 0 {
-        showImageInNavbar = true
-      } else {
-        showImageInNavbar = false
-      }
-    }
     .navigationBarBackButtonHidden()
     .toolbar {
       TTToolbarContent(
